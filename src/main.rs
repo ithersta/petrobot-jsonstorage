@@ -46,7 +46,7 @@ async fn store(json: String, state: &State<AppState>) -> Result<String, status::
     let hash = Sha256::digest(&json);
     let id = hex::encode(hash);
 
-    sqlx::query("INSERT INTO jsons(id, json) VALUES ($1, $2)")
+    sqlx::query("INSERT INTO jsons(id, json) VALUES ($1, $2) ON CONFLICT (id) DO UPDATE SET json = EXCLUDED.json")
         .bind(&id)
         .bind(json.as_str())
         .execute(&state.pool)
