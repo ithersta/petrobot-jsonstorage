@@ -2,10 +2,11 @@
 extern crate rocket;
 
 use hex;
-use serde::Serialize;
+use rocket::{Config, State};
+use rocket::data::{Limits, ToByteUnit};
 use rocket::http::Status;
 use rocket::response::status;
-use rocket::State;
+use serde::Serialize;
 use sha2::{Digest, Sha256};
 use shuttle_runtime::CustomError;
 use sqlx::{FromRow, PgPool};
@@ -68,7 +69,9 @@ async fn rocket(#[shuttle_shared_db::Postgres] pool: PgPool) -> shuttle_rocket::
     MIGRATOR.run(&pool).await.map_err(CustomError::new)?;
 
     let state = AppState { pool };
-    let rocket = rocket::build()
+    let figment = rocket::Config::figment()
+        .merge(("limits", Limits::new().limit("string", 2.mebibytes())));
+    let rocket = rocket::custom(figment)
         .mount("/", routes![store, load])
         .manage(state);
 
